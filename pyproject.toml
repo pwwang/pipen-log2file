@@ -1,0 +1,39 @@
+[tool.poetry]
+name = "pipen-log2file"
+version = "0.0.0"
+description = "Add verbosal information in logs for pipen."
+authors = ["pwwang <pwwang@pwwang.com>"]
+license = "MIT"
+readme = "README.md"
+homepage = "https://github.com/pwwang/pipen-log2file"
+repository = "https://github.com/pwwang/pipen-log2file"
+
+[tool.poetry.dependencies]
+python = "^3.7.1"
+pipen = "^0.7"
+
+[tool.poetry.build]
+generate-setup-file = true
+
+[tool.poetry.dev-dependencies]
+pytest = "^7"
+pytest-cov = "^4"
+
+[build-system]
+requires = ["poetry>=0.12"]
+build-backend = "poetry.masonry.api"
+
+[tool.poetry.plugins.pipen]
+log2file = "pipen_log2file:log2file_plugin"
+
+[tool.mypy]
+ignore_missing_imports = true
+allow_redefinition = true
+disable_error_code = ["attr-defined", "no-redef"]
+show_error_codes = true
+strict_optional = false
+
+[tool.black]
+line-length = 80
+target-version = ['py37', 'py38', 'py39']
+include = '\.pyi?$'
