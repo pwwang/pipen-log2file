@@ -58,7 +58,7 @@ class PipenLog2FilePlugin:
     __version__: str = __version__
 
     def __init__(self) -> None:
-        self._handler = None
+        self._handler: logging.FileHandler | None = None
 
     @plugin.impl
     async def on_init(self, pipen: Pipen):

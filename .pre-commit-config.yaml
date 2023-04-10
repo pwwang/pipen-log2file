@@ -16,7 +16,7 @@ repos:
         name: Run mypy type check
         entry: mypy
         language: system
-        args: ["-p", "pipen_log2file.py"]
+        args: ["-p", "pipen_log2file"]
         pass_filenames: false
         always_run: true
         files: ^pipen_log2file\.py$
@@ -27,4 +27,3 @@ repos:
         args: [pipen_log2file.py]
         pass_filenames: false
         files: ^pipen_log2file\.py$
-
