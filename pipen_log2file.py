@@ -1,15 +1,17 @@
 """pipen-log2file plugin: Save running logs to file"""
 from __future__ import annotations
-from typing import TYPE_CHECKING
 
 import logging
+from math import ceil
 from datetime import datetime
+from typing import TYPE_CHECKING
 
 from rich.markup import _parse
 from pipen import plugin
 
 if TYPE_CHECKING:  # pragma: no cover
-    from pipen import Pipen
+    from pipen import Pipen, Proc
+    from pipen.job import Job
 
 __version__ = "0.0.0"
 
@@ -59,6 +61,7 @@ class PipenLog2FilePlugin:
 
     def __init__(self) -> None:
         self._handler: logging.FileHandler | None = None
+        self._job_progress = []
 
     @plugin.impl
     async def on_init(self, pipen: Pipen):
@@ -93,6 +96,54 @@ class PipenLog2FilePlugin:
         """Remove the handler in case logger is used by other pipelines"""
         _remove_handler(self._handler)
         self._handler = None
+
+    @plugin.impl
+    async def on_job_succeeded(self, proc: Proc, job: Job):
+        self._log_job_progress(proc, job, "✔")
+
+    @plugin.impl
+    async def on_job_failed(self, proc: Proc, job: Job):
+        self._log_job_progress(proc, job, "✘")
+
+    @plugin.impl
+    async def on_job_cached(self, proc: Proc, job: Job):
+        self._log_job_progress(proc, job, "✔")
+
+    @plugin.impl
+    async def on_proc_done(self, proc: Proc, succeeded: bool | str):
+        if not self._handler:
+            return
+
+        self._emit_log_progress(proc.name)
+
+    def _emit_log_progress(self, procname: str):
+        """Emit the job progress"""
+        if not self._handler or not self._job_progress:
+            return
+
+        record = logging.LogRecord(
+            name="pipen.main",
+            level=logging.INFO,
+            pathname="",
+            lineno=0,
+            msg=f'{procname}: Progress {" ".join(self._job_progress)}',
+            args=(),
+            exc_info=None,
+        )
+        record.plugin_name = "main"
+        self._handler.emit(record)
+        self._job_progress.clear()
+
+    def _log_job_progress(self, proc: Proc, job: Job, status: str):
+        """Log the job progress"""
+        if not self._handler:
+            return
+
+        job_index = str(job.index).zfill(len(str(proc.size - 1)))
+        njobs_per_line = ceil(55.0 / (len(job_index) + 2))
+        self._job_progress.append(f"{job_index}{status}")
+        if len(self._job_progress) == njobs_per_line:
+            self._emit_log_progress(proc.name)
 
 
 log2file_plugin = PipenLog2FilePlugin()
