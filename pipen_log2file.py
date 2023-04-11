@@ -4,7 +4,7 @@ from __future__ import annotations
 import logging
 from math import ceil
 from datetime import datetime
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, List
 
 from rich.markup import _parse
 from pipen import plugin
@@ -13,7 +13,7 @@ if TYPE_CHECKING:  # pragma: no cover
     from pipen import Pipen, Proc
     from pipen.job import Job
 
-__version__ = "0.0.0"
+__version__ = "0.1.0"
 
 
 def _remove_rich_tags(text: str) -> str:
@@ -61,7 +61,7 @@ class PipenLog2FilePlugin:
 
     def __init__(self) -> None:
         self._handler: logging.FileHandler | None = None
-        self._job_progress = []
+        self._job_progress: List[str] = []
 
     @plugin.impl
     async def on_init(self, pipen: Pipen):
