@@ -130,7 +130,7 @@ class PipenLog2FilePlugin:
             args=(),
             exc_info=None,
         )
-        record.plugin_name = "main"
+        record.plugin_name = "log2f"
         self._handler.emit(record)
         self._job_progress.clear()
 
