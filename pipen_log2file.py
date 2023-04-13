@@ -4,9 +4,10 @@ from __future__ import annotations
 import logging
 from math import ceil
 from datetime import datetime
-from typing import TYPE_CHECKING, List
+from typing import TYPE_CHECKING, Any, Dict, List
 
 from rich.markup import _parse
+from xqute.utils import logger as xqute_logger
 from pipen import plugin
 
 if TYPE_CHECKING:  # pragma: no cover
@@ -14,6 +15,8 @@ if TYPE_CHECKING:  # pragma: no cover
     from pipen.job import Job
 
 __version__ = "0.1.0"
+
+xqute_logger_handlers = xqute_logger.handlers
 
 
 def _remove_rich_tags(text: str) -> str:
@@ -64,6 +67,13 @@ class PipenLog2FilePlugin:
         self._job_progress: List[str] = []
 
     @plugin.impl
+    def on_setup(config: Dict[str, Any]) -> None:
+        # Remove all handlers from xqute logger
+        config.plugin_opts.log2file_xqute = True
+        config.plugin_opts.log2file_xqute_level = "INFO"
+        config.plugin_opts.log2file_xqute_append = False
+
+    @plugin.impl
     async def on_init(self, pipen: Pipen):
         """Initialize the logging handler"""
         # In case the handler is already set
@@ -110,7 +120,33 @@ class PipenLog2FilePlugin:
         self._log_job_progress(proc, job, "✔")
 
     @plugin.impl
+    async def on_proc_start(self, proc: Proc):
+        """Also save xqute logs"""
+        if not proc.plugin_opts.log2file_xqute:
+            return
+
+        xqute_logger.handlers = []
+        logfile = proc.workdir.joinpath("proc.xqute.log")
+        if not proc.plugin_opts.log2file_xqute_append and logfile.exists():
+            logfile.unlink()
+
+        xqute_handler = logging.FileHandler(logfile)
+        xqute_handler.setFormatter(
+            logging.Formatter(
+                "%(asctime)s %(levelname)-7s %(message)s",
+                datefmt="%Y-%m-%d %H:%M:%S",
+            )
+        )
+        # handler.addFilter(_RemoveRichMarkupFilter())
+        xqute_logger.addHandler(xqute_handler)
+        xqute_logger.setLevel(proc.plugin_opts.log2file_xqute_level.upper())
+
+    @plugin.impl
     async def on_proc_done(self, proc: Proc, succeeded: bool | str):
+        if not proc.plugin_opts.log2file_xqute:
+            # in case xqute logger is used after this
+            xqute_logger.handlers = xqute_logger_handlers
+
         if not self._handler:
             return
 
