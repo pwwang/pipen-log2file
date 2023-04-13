@@ -14,7 +14,7 @@ if TYPE_CHECKING:  # pragma: no cover
     from pipen import Pipen, Proc
     from pipen.job import Job
 
-__version__ = "0.1.0"
+__version__ = "0.2.0"
 
 xqute_logger_handlers = xqute_logger.handlers
 
