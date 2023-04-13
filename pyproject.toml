@@ -10,7 +10,7 @@ repository = "https://github.com/pwwang/pipen-log2file"
 
 [tool.poetry.dependencies]
 python = "^3.8"
-pipen = "^0.8"
+pipen = "^0.9"
 
 [tool.poetry.build]
 generate-setup-file = true
