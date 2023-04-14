@@ -68,15 +68,13 @@ class PipenLog2FilePlugin:
         self._xqute_handler: logging.Handler | None = None
 
     @plugin.impl
-    def on_setup(config: Dict[str, Any]) -> None:
-        # Remove all handlers from xqute logger
-        config.plugin_opts.log2file_xqute = True
-        config.plugin_opts.log2file_xqute_level = "INFO"
-        config.plugin_opts.log2file_xqute_append = False
-
-    @plugin.impl
     async def on_init(self, pipen: Pipen):
         """Initialize the logging handler"""
+        # default options
+        pipen.config.plugin_opts.log2file_xqute = True
+        pipen.config.plugin_opts.log2file_xqute_level = "INFO"
+        pipen.config.plugin_opts.log2file_xqute_append = False
+
         # In case the handler is already set
         # This happens when on_complete can not be reached due to errors
         if self._handler:  # pragma: no cover
