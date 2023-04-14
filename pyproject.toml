@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "pipen-log2file"
-version = "0.2.0"
+version = "0.2.1"
 description = "Add verbosal information in logs for pipen."
 authors = ["pwwang <pwwang@pwwang.com>"]
 license = "MIT"
@@ -10,7 +10,7 @@ repository = "https://github.com/pwwang/pipen-log2file"
 
 [tool.poetry.dependencies]
 python = "^3.8"
-pipen = "^0.9.1"
+pipen = "^0.9.2"
 
 [tool.poetry.build]
 generate-setup-file = true
