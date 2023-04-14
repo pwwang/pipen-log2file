@@ -65,6 +65,7 @@ class PipenLog2FilePlugin:
     def __init__(self) -> None:
         self._handler: logging.FileHandler | None = None
         self._job_progress: List[str] = []
+        self._xqute_handler: logging.Handler | None = None
 
     @plugin.impl
     def on_setup(config: Dict[str, Any]) -> None:
@@ -125,27 +126,26 @@ class PipenLog2FilePlugin:
         if not proc.plugin_opts.log2file_xqute:
             return
 
-        xqute_logger.handlers = []
         logfile = proc.workdir.joinpath("proc.xqute.log")
         if not proc.plugin_opts.log2file_xqute_append and logfile.exists():
             logfile.unlink()
 
-        xqute_handler = logging.FileHandler(logfile)
-        xqute_handler.setFormatter(
+        self._xqute_handler = logging.FileHandler(logfile)
+        self._xqute_handler.setFormatter(
             logging.Formatter(
                 "%(asctime)s %(levelname)-7s %(message)s",
                 datefmt="%Y-%m-%d %H:%M:%S",
             )
         )
         # handler.addFilter(_RemoveRichMarkupFilter())
-        xqute_logger.addHandler(xqute_handler)
+        xqute_logger.addHandler(self._xqute_handler)
         xqute_logger.setLevel(proc.plugin_opts.log2file_xqute_level.upper())
 
     @plugin.impl
     async def on_proc_done(self, proc: Proc, succeeded: bool | str):
-        if not proc.plugin_opts.log2file_xqute:
-            # in case xqute logger is used after this
-            xqute_logger.handlers = xqute_logger_handlers
+        if self._xqute_handler and self._xqute_handler in xqute_logger.handlers:
+            xqute_logger.removeHandler(self._xqute_handler)
+            self._xqute_handler = None
 
         if not self._handler:
             return
