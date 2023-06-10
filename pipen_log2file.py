@@ -90,7 +90,7 @@ class PipenLog2FilePlugin:
             latest_log.unlink()
         latest_log.symlink_to(logfile.relative_to(pipen.workdir))
 
-        self._handler = logging.FileHandler(logfile)
+        self._handler = logging.FileHandler(logfile, delay=True)
         self._handler.setFormatter(
             logging.Formatter(
                 "%(asctime)s %(levelname)-1.1s %(plugin_name)-7s %(message)s",
@@ -128,7 +128,7 @@ class PipenLog2FilePlugin:
         if not proc.plugin_opts.log2file_xqute_append and logfile.exists():
             logfile.unlink()
 
-        self._xqute_handler = logging.FileHandler(logfile)
+        self._xqute_handler = logging.FileHandler(logfile, delay=True)
         self._xqute_handler.setFormatter(
             logging.Formatter(
                 "%(asctime)s %(levelname)-7s %(message)s",
