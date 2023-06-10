@@ -4,7 +4,7 @@ from __future__ import annotations
 import logging
 from math import ceil
 from datetime import datetime
-from typing import TYPE_CHECKING, Any, Dict, List
+from typing import TYPE_CHECKING, List
 
 from rich.markup import _parse
 from xqute.utils import logger as xqute_logger
@@ -14,7 +14,7 @@ if TYPE_CHECKING:  # pragma: no cover
     from pipen import Pipen, Proc
     from pipen.job import Job
 
-__version__ = "0.3.0"
+__version__ = "0.3.1"
 
 xqute_logger_handlers = xqute_logger.handlers
 
@@ -141,7 +141,10 @@ class PipenLog2FilePlugin:
 
     @plugin.impl
     async def on_proc_done(self, proc: Proc, succeeded: bool | str):
-        if self._xqute_handler and self._xqute_handler in xqute_logger.handlers:
+        if (
+            self._xqute_handler
+            and self._xqute_handler in xqute_logger.handlers
+        ):
             xqute_logger.removeHandler(self._xqute_handler)
             self._xqute_handler = None
 
