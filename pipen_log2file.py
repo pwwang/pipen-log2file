@@ -104,6 +104,10 @@ class PipenLog2FilePlugin:
     async def on_complete(self, pipen: Pipen, succeeded: bool):
         """Remove the handler in case logger is used by other pipelines"""
         _remove_handler(self._handler)
+        try:
+            self._handler.close()
+        except Exception:  # pragma: no cover
+            pass
         self._handler = None
 
     @plugin.impl
