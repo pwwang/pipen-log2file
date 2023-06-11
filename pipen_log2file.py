@@ -146,6 +146,10 @@ class PipenLog2FilePlugin:
             and self._xqute_handler in xqute_logger.handlers
         ):
             xqute_logger.removeHandler(self._xqute_handler)
+            try:
+                self._xqute_handler.close()
+            except Exception:  # pragma: no cover
+                pass
             self._xqute_handler = None
 
         if not self._handler:
