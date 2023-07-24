@@ -16,6 +16,7 @@ pipen = "^0.10.0"
 generate-setup-file = true
 
 [tool.poetry.dev-dependencies]
+pipen-args = "^0.10.3"
 pytest = "^7"
 pytest-cov = "^4"
 

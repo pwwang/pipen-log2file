@@ -60,6 +60,7 @@ class _RemoveRichMarkupFilter(logging.Filter):
 class PipenLog2FilePlugin:
     """pipen-log2file plugin: Save running logs to file"""
     name = "log2file"
+    priority = 1000
     __version__: str = __version__
 
     def __init__(self) -> None:
