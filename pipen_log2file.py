@@ -1,6 +1,7 @@
 """pipen-log2file plugin: Save running logs to file"""
 from __future__ import annotations
 
+import sys
 import logging
 from math import ceil
 from datetime import datetime
@@ -71,6 +72,11 @@ class PipenLog2FilePlugin:
     @plugin.impl
     async def on_init(self, pipen: Pipen):
         """Initialize the logging handler"""
+        # If we are called by pipen-board or other plugins just to
+        # gather the pipeline information
+        if sys.argv[0].startswith("@pipen-"):
+            return
+
         # default options
         pipen.config.plugin_opts.log2file_xqute = True
         pipen.config.plugin_opts.log2file_xqute_level = "INFO"
