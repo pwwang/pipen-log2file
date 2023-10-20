@@ -15,7 +15,7 @@ if TYPE_CHECKING:  # pragma: no cover
     from pipen import Pipen, Proc
     from pipen.job import Job
 
-__version__ = "0.4.0"
+__version__ = "0.5.0"
 
 xqute_logger_handlers = xqute_logger.handlers
 
@@ -53,6 +53,7 @@ def _remove_handler(handler: logging.Handler | None):
 
 class _RemoveRichMarkupFilter(logging.Filter):
     """Remove rich tags from logs"""
+
     def filter(self, record: logging.LogRecord) -> bool:
         record.msg = _remove_rich_tags(record.msg)
         return True
