@@ -4,6 +4,7 @@ from pipen import Pipen, Proc
 class P(Proc):
     """Process"""
     input = "in"
+    input_data = [1]
     output = "out:var:{{in.in}}"
     script = "echo 123"
 

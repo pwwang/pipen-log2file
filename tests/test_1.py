@@ -12,7 +12,7 @@ HERE = Path(__file__).resolve().parent
 
 
 def test_1():
-    logfile = HERE.joinpath(".pipen", "Pipeline2", "run-latest.log")
+    logfile = Path(".").joinpath(".pipen", "Pipeline2", "run-latest.log")
     logfile.unlink(missing_ok=True)
     cmd = [
         sys.executable,
