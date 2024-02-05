@@ -9,14 +9,14 @@ homepage = "https://github.com/pwwang/pipen-log2file"
 repository = "https://github.com/pwwang/pipen-log2file"
 
 [tool.poetry.dependencies]
-python = "^3.8"
-pipen = "^0.13"
+python = "^3.9"
+pipen = "^0.14"
 
 [tool.poetry.build]
 generate-setup-file = true
 
 [tool.poetry.dev-dependencies]
-pipen-args = "^0.13"
+pipen-args = "^0.14"
 pytest = "^7"
 pytest-cov = "^4"
 
