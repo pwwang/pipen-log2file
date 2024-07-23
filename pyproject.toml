@@ -10,15 +10,15 @@ repository = "https://github.com/pwwang/pipen-log2file"
 
 [tool.poetry.dependencies]
 python = "^3.9"
-pipen = "^0.14"
+pipen = "^0.15.0"
 
 [tool.poetry.build]
 generate-setup-file = true
 
 [tool.poetry.dev-dependencies]
-pipen-args = "^0.14"
-pytest = "^7"
-pytest-cov = "^4"
+pipen-args = "^0.15.0"
+pytest = "^8"
+pytest-cov = "^5"
 
 [build-system]
 requires = ["poetry>=1.0"]
@@ -36,5 +36,5 @@ strict_optional = false
 
 [tool.black]
 line-length = 88
-target-version = ['py38', 'py39', 'py310', 'py311']
+target-version = ['py39', 'py310', 'py311', 'py312']
 include = '\.pyi?$'

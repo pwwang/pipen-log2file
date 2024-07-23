@@ -119,16 +119,16 @@ class PipenLog2FilePlugin:
         self._handler = None
 
     @plugin.impl
-    async def on_job_succeeded(self, proc: Proc, job: Job):
-        self._log_job_progress(proc, job, "✔")
+    async def on_job_succeeded(self, job: Job):
+        self._log_job_progress(job, "✔")
 
     @plugin.impl
-    async def on_job_failed(self, proc: Proc, job: Job):
-        self._log_job_progress(proc, job, "✘")
+    async def on_job_failed(self, job: Job):
+        self._log_job_progress(job, "✘")
 
     @plugin.impl
-    async def on_job_cached(self, proc: Proc, job: Job):
-        self._log_job_progress(proc, job, "✔")
+    async def on_job_cached(self, job: Job):
+        self._log_job_progress(job, "✔")
 
     @plugin.impl
     async def on_proc_start(self, proc: Proc):
@@ -187,16 +187,16 @@ class PipenLog2FilePlugin:
         self._handler.emit(record)
         self._job_progress.clear()
 
-    def _log_job_progress(self, proc: Proc, job: Job, status: str):
+    def _log_job_progress(self, job: Job, status: str):
         """Log the job progress"""
         if not self._handler:
             return
 
-        job_index = str(job.index).zfill(len(str(proc.size - 1)))
+        job_index = str(job.index).zfill(len(str(job.proc.size - 1)))
         njobs_per_line = ceil(55.0 / (len(job_index) + 2))
         self._job_progress.append(f"{job_index}{status}")
         if len(self._job_progress) == njobs_per_line:
-            self._emit_log_progress(proc.name)
+            self._emit_log_progress(job.proc.name)
 
 
 log2file_plugin = PipenLog2FilePlugin()
