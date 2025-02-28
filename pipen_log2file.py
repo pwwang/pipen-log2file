@@ -1,14 +1,20 @@
 """pipen-log2file plugin: Save running logs to file"""
+
 from __future__ import annotations
 
 import sys
 import logging
+from pathlib import Path
+from hashlib import sha256
 from math import ceil
 from datetime import datetime
+from tempfile import mkdtemp
 from typing import TYPE_CHECKING, List
 
+from yunpath import AnyPath, CloudPath
 from rich.markup import _parse
 from xqute.utils import logger as xqute_logger
+from xqute.path import DualPath, MountedPath
 from pipen import plugin
 
 if TYPE_CHECKING:  # pragma: no cover
@@ -61,14 +67,27 @@ class _RemoveRichMarkupFilter(logging.Filter):
 
 class PipenLog2FilePlugin:
     """pipen-log2file plugin: Save running logs to file"""
+
     name = "log2file"
     priority = 1000
     __version__: str = __version__
+    __slots__ = (
+        "_handler",
+        "_job_progress",
+        "_xqute_handler",
+        "logfile",
+        "latest_logfile",
+        "xqute_logfile",
+    )
 
     def __init__(self) -> None:
         self._handler: logging.FileHandler | None = None
         self._job_progress: List[str] = []
         self._xqute_handler: logging.Handler | None = None
+        # The logfile for the current pipeline
+        self.logfile: MountedPath | CloudPath = None
+        self.latest_logfile: MountedPath | CloudPath = None
+        self.xqute_logfile: MountedPath | CloudPath = None
 
     @plugin.impl
     async def on_init(self, pipen: Pipen):
@@ -88,17 +107,37 @@ class PipenLog2FilePlugin:
         if self._handler:  # pragma: no cover
             return
 
-        logfile = pipen.workdir.joinpath(
-            ".logs",
-            f"run-{datetime.now():%Y_%m_%d_%H_%M_%S}.log"
-        )
-        logfile.parent.mkdir(parents=True, exist_ok=True)
-        latest_log = pipen.workdir.joinpath("run-latest.log")
-        if latest_log.exists() or latest_log.is_symlink():
-            latest_log.unlink()
-        latest_log.symlink_to(logfile.relative_to(pipen.workdir))
+        if "workdir" in pipen._kwargs:
+            # kwargs have higher priority than config
+            pipen.workdir = AnyPath(pipen._kwargs["workdir"]) / pipen.name
 
-        self._handler = logging.FileHandler(logfile, delay=True)
+        lfname = f"run-{datetime.now():%Y_%m_%d_%H_%M_%S}.log"
+        if isinstance(pipen.workdir, CloudPath):
+            dig = sha256(str(pipen.workdir).encode()).hexdigest()[:8]
+            self.logfile = DualPath(
+                pipen.workdir.joinpath(".logs", lfname),
+                Path(mkdtemp(suffix=f"-{dig}")).joinpath(".logs", lfname),
+            ).mounted
+            self.latest_logfile = DualPath(
+                pipen.workdir.joinpath("run-latest.log"),
+                self.logfile.parent.parent.joinpath("run-latest.log"),
+            ).mounted
+
+        else:
+            self.logfile = DualPath(pipen.workdir.joinpath(".logs", lfname)).mounted
+            self.latest_logfile = DualPath(
+                pipen.workdir.joinpath("run-latest.log")
+            ).mounted
+
+        self.logfile.parent.mkdir(parents=True, exist_ok=True)
+        if self.latest_logfile.exists() or self.latest_logfile.is_symlink():
+            self.latest_logfile.unlink()
+
+        self.latest_logfile.symlink_to(
+            self.logfile.relative_to(self.logfile.parent.parent.absolute())
+        )
+
+        self._handler = logging.FileHandler(self.logfile, delay=True)
         self._handler.setFormatter(
             logging.Formatter(
                 "%(asctime)s %(levelname)-1.1s %(plugin_name)-7s %(message)s",
@@ -107,6 +146,20 @@ class PipenLog2FilePlugin:
         )
         self._handler.addFilter(_RemoveRichMarkupFilter())
         _add_handler(self._handler)
+
+    def _sync_logfile(
+        self,
+        pipen_or_proc: Pipen | Proc,
+        logfile: MountedPath | CloudPath,
+    ):
+        """Sync the log file to cloud storage"""
+        if not isinstance(pipen_or_proc.workdir, CloudPath):
+            # Not in cloud storage
+            return
+
+        # print(f"Synchronizing {logfile} to cloud storage {logfile.spec}")
+        logfile.spec.parent.mkdir(parents=True, exist_ok=True)  # type: ignore
+        logfile.spec.write_text(logfile.read_text())  # type: ignore
 
     @plugin.impl
     async def on_complete(self, pipen: Pipen, succeeded: bool):
@@ -117,6 +170,9 @@ class PipenLog2FilePlugin:
         except Exception:  # pragma: no cover
             pass
         self._handler = None
+
+        self._sync_logfile(pipen, self.logfile)
+        self._sync_logfile(pipen, self.latest_logfile)
 
     @plugin.impl
     async def on_job_succeeded(self, job: Job):
@@ -136,11 +192,20 @@ class PipenLog2FilePlugin:
         if not proc.plugin_opts.log2file_xqute:
             return
 
-        logfile = proc.workdir.joinpath("proc.xqute.log")
-        if not proc.plugin_opts.log2file_xqute_append and logfile.exists():
-            logfile.unlink()
+        if isinstance(proc.workdir, CloudPath):
+            self.xqute_logfile = DualPath(
+                proc.workdir.joinpath("proc.xqute.log"),
+                self.logfile.parent.joinpath(f"{proc.name}.xqute.log"),
+            ).mounted
+        else:
+            self.xqute_logfile = DualPath(
+                proc.workdir.joinpath("proc.xqute.log")
+            ).mounted
 
-        self._xqute_handler = logging.FileHandler(logfile, delay=True)
+        if not proc.plugin_opts.log2file_xqute_append and self.xqute_logfile.exists():
+            self.xqute_logfile.unlink()
+
+        self._xqute_handler = logging.FileHandler(self.xqute_logfile, delay=True)
         self._xqute_handler.setFormatter(
             logging.Formatter(
                 "%(asctime)s %(levelname)-7s %(message)s",
@@ -153,10 +218,7 @@ class PipenLog2FilePlugin:
 
     @plugin.impl
     async def on_proc_done(self, proc: Proc, succeeded: bool | str):
-        if (
-            self._xqute_handler
-            and self._xqute_handler in xqute_logger.handlers
-        ):
+        if self._xqute_handler and self._xqute_handler in xqute_logger.handlers:
             xqute_logger.removeHandler(self._xqute_handler)
             try:
                 self._xqute_handler.close()
@@ -164,10 +226,16 @@ class PipenLog2FilePlugin:
                 pass
             self._xqute_handler = None
 
+        self._sync_logfile(proc, self.xqute_logfile)
+        self.xqute_logfile = None
+
         if not self._handler:
             return
 
         self._emit_log_progress(proc.name)
+
+        self._sync_logfile(proc, self.logfile)
+        self._sync_logfile(proc, self.latest_logfile)
 
     def _emit_log_progress(self, procname: str):
         """Emit the job progress"""
