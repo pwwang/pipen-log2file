@@ -134,7 +134,7 @@ class PipenLog2FilePlugin:
             self.latest_logfile.unlink()
 
         self.latest_logfile.symlink_to(
-            self.logfile.relative_to(self.logfile.parent.parent.absolute())
+            self.logfile.absolute().relative_to(self.logfile.parent.parent.absolute())
         )
 
         self._handler = logging.FileHandler(self.logfile, delay=True)
