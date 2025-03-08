@@ -14,7 +14,7 @@ from typing import TYPE_CHECKING, List
 from yunpath import AnyPath, CloudPath
 from rich.markup import _parse
 from xqute.utils import logger as xqute_logger
-from xqute.path import DualPath, MountedPath
+from xqute.path import MountedPath
 from pipen import plugin
 
 if TYPE_CHECKING:  # pragma: no cover
@@ -114,20 +114,18 @@ class PipenLog2FilePlugin:
         lfname = f"run-{datetime.now():%Y_%m_%d_%H_%M_%S}.log"
         if isinstance(pipen.workdir, CloudPath):
             dig = sha256(str(pipen.workdir).encode()).hexdigest()[:8]
-            self.logfile = DualPath(
-                pipen.workdir.joinpath(".logs", lfname),
+            self.logfile = MountedPath(
                 Path(mkdtemp(suffix=f"-{dig}")).joinpath(".logs", lfname),
-            ).mounted
-            self.latest_logfile = DualPath(
-                pipen.workdir.joinpath("run-latest.log"),
+                spec=pipen.workdir.joinpath(".logs", lfname),
+            )
+            self.latest_logfile = MountedPath(
                 self.logfile.parent.parent.joinpath("run-latest.log"),
-            ).mounted
+                spec=pipen.workdir.joinpath("run-latest.log"),
+            )
 
         else:
-            self.logfile = DualPath(pipen.workdir.joinpath(".logs", lfname)).mounted
-            self.latest_logfile = DualPath(
-                pipen.workdir.joinpath("run-latest.log")
-            ).mounted
+            self.logfile = MountedPath(pipen.workdir.joinpath(".logs", lfname))
+            self.latest_logfile = MountedPath(pipen.workdir.joinpath("run-latest.log"))
 
         self.logfile.parent.mkdir(parents=True, exist_ok=True)
         if self.latest_logfile.exists() or self.latest_logfile.is_symlink():
@@ -193,14 +191,12 @@ class PipenLog2FilePlugin:
             return
 
         if isinstance(proc.workdir, CloudPath):
-            self.xqute_logfile = DualPath(
-                proc.workdir.joinpath("proc.xqute.log"),
+            self.xqute_logfile = MountedPath(
                 self.logfile.parent.joinpath(f"{proc.name}.xqute.log"),
-            ).mounted
+                spec=proc.workdir.joinpath("proc.xqute.log"),
+            )
         else:
-            self.xqute_logfile = DualPath(
-                proc.workdir.joinpath("proc.xqute.log")
-            ).mounted
+            self.xqute_logfile = MountedPath(proc.workdir.joinpath("proc.xqute.log"))
 
         if not proc.plugin_opts.log2file_xqute_append and self.xqute_logfile.exists():
             self.xqute_logfile.unlink()
