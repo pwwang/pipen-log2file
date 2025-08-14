@@ -98,9 +98,9 @@ class PipenLog2FilePlugin:
             return
 
         # default options
-        pipen.config.plugin_opts.log2file_xqute = True
-        pipen.config.plugin_opts.log2file_xqute_level = "INFO"
-        pipen.config.plugin_opts.log2file_xqute_append = False
+        pipen.config.plugin_opts.setdefault("log2file_xqute", True)
+        pipen.config.plugin_opts.setdefault("log2file_xqute_level", "INFO")
+        pipen.config.plugin_opts.setdefault("log2file_xqute_append", False)
 
         # In case the handler is already set
         # This happens when on_complete can not be reached due to errors
