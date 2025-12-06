@@ -23,6 +23,9 @@ jobs:
           python -m pip install poetry
           poetry config virtualenvs.create false
           poetry install -v
+      - name: Run tests
+        run: |
+          poetry run pytest tests --cov=pipen_log2file --cov-report=term-missing
 
   deploy:
     needs: build
