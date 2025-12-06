@@ -315,7 +315,8 @@ class PipenLog2FilePlugin:
     @plugin.impl
     async def on_proc_done(self, proc: Proc, succeeded: bool | str):
         """Remove xqute log handler and sync log files"""
-        self._log_job_statuses(proc, always=True)
+        # May be duplicate when all job statuses have been logged
+        # self._log_job_statuses(proc, always=True)
 
         self._last_update_time = 0.0
         for val in self._job_statuses.values():
