@@ -17,6 +17,7 @@ class ExamplePipelineCloudWdir(Pipen):
     data = [["a", "b", "c", "d", "e"]]
     workdir = f"{BUCKET}/pipen-log2file-example"
     loglevel = "debug"
+    cache = False
 
 
 if __name__ == "__main__":

@@ -9,10 +9,14 @@ class AProc(Proc):
         "x": "[a]\nb=1\n",
         "xyz": "[a]\nb=1\n",
     }
-    script = "echo 123 > {{out.b}}"
+    script = "sleep 3; echo 123 > {{out.b}}"
 
 
-pipen = Pipen(loglevel="debug").set_start(AProc)
+class BProc(AProc):
+    requires = AProc
+
+
+pipen = Pipen(loglevel="debug", cache=False).set_start(AProc)
 
 if __name__ == "__main__":
     pipen.run()
