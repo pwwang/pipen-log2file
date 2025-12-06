@@ -101,8 +101,7 @@ class PipenLog2FilePlugin:
         pipen.config.plugin_opts.setdefault("log2file_xqute", True)
         pipen.config.plugin_opts.setdefault("log2file_xqute_level", "INFO")
         pipen.config.plugin_opts.setdefault("log2file_xqute_append", False)
-        pipen.config.plugin_opts.setdefault("log2file_delay", True)
-        log2file_delay = pipen.config.plugin_opts["log2file_delay"]
+        pipen.config.plugin_opts.setdefault("log2file_update_freq", 5.0)
 
         # In case the handler is already set
         # This happens when on_complete can not be reached due to errors
@@ -137,7 +136,7 @@ class PipenLog2FilePlugin:
             self.logfile.absolute().relative_to(self.logfile.parent.parent.absolute())
         )
 
-        self._handler = logging.FileHandler(self.logfile, delay=log2file_delay)
+        self._handler = logging.FileHandler(self.logfile)
         self._handler.setFormatter(
             logging.Formatter(
                 "%(asctime)s %(levelname)-1.1s %(plugin_name)-7s %(message)s",
