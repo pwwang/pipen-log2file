@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "pipen-log2file"
-version = "0.10.3"
+version = "0.10.4"
 description = "Add verbosal information in logs for pipen."
 authors = ["pwwang <pwwang@pwwang.com>"]
 license = "MIT"
