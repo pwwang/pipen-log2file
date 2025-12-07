@@ -178,7 +178,6 @@ class PipenLog2FilePlugin:
         pipen.config.plugin_opts.setdefault("log2file_xqute", True)
         pipen.config.plugin_opts.setdefault("log2file_xqute_level", "INFO")
         pipen.config.plugin_opts.setdefault("log2file_xqute_append", False)
-        pipen.config.plugin_opts.setdefault("log2file_update_freq", 5.0)
 
         # In case the handler is already set
         # This happens when on_complete can not be reached due to errors
@@ -192,6 +191,7 @@ class PipenLog2FilePlugin:
 
         lfname = f"run-{datetime.now():%Y_%m_%d_%H_%M_%S}.log"
         if isinstance(pipen.workdir, CloudPath):
+            pipen.config.plugin_opts.setdefault("log2file_update_freq", 10.0)
             dig = sha256(str(pipen.workdir).encode()).hexdigest()[:8]
             self.logfile = MountedPath(
                 Path(mkdtemp(suffix=f"-{dig}")).joinpath(".logs", lfname),
@@ -203,6 +203,7 @@ class PipenLog2FilePlugin:
             )
 
         else:
+            pipen.config.plugin_opts.setdefault("log2file_update_freq", 5.0)
             self.logfile = MountedPath(pipen.workdir.joinpath(".logs", lfname))
             self.latest_logfile = MountedPath(pipen.workdir.joinpath("run-latest.log"))
 
