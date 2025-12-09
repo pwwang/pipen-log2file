@@ -23,7 +23,7 @@ if TYPE_CHECKING:  # pragma: no cover
     from pipen import Pipen, Proc
     from pipen.job import Job
 
-__version__ = "0.10.4"
+__version__ = "0.10.5"
 
 xqute_logger_handlers = xqute_logger.handlers
 
