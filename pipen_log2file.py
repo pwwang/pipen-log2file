@@ -63,7 +63,16 @@ class _RemoveRichMarkupFilter(logging.Filter):
     """Remove rich tags from logs"""
 
     def filter(self, record: logging.LogRecord) -> bool:
-        record.msg = _remove_rich_tags(record.msg)
+        # Get the final formatted message (after %s interpolation)
+        # and remove rich tags from it
+        if record.args:
+            # If there are args, getMessage() will perform interpolation
+            original_msg = record.getMessage()
+            record.msg = _remove_rich_tags(original_msg)
+            record.args = ()  # Clear args since msg is now fully formatted
+        else:
+            # No interpolation needed, just remove tags from msg
+            record.msg = _remove_rich_tags(record.msg)
         return True
 
 
