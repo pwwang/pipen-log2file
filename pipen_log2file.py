@@ -7,10 +7,9 @@ import logging
 import time
 from pathlib import Path
 from hashlib import sha256
-from math import ceil
 from datetime import datetime
 from tempfile import mkdtemp
-from typing import TYPE_CHECKING, List
+from typing import TYPE_CHECKING
 
 from yunpath import AnyPath, CloudPath
 from rich.markup import _parse
