@@ -161,7 +161,11 @@ class PipenLog2FilePlugin:
             return
 
         update_freq = proc.plugin_opts.get("log2file_update_freq", 5.0)
-        if not always and time.time() - self._last_update_time < update_freq:
+        if (
+            not always
+            and time.time() - self._last_update_time < update_freq
+            and proc.size > 5
+        ):
             return
 
         self._emit_message(
@@ -186,6 +190,7 @@ class PipenLog2FilePlugin:
         pipen.config.plugin_opts.setdefault("log2file_xqute", True)
         pipen.config.plugin_opts.setdefault("log2file_xqute_level", "INFO")
         pipen.config.plugin_opts.setdefault("log2file_xqute_append", False)
+        # log2file_update_freq is set in on_init based on workdir type
 
         # In case the handler is already set
         # This happens when on_complete can not be reached due to errors
