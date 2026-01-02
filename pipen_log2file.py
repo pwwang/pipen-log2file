@@ -5,13 +5,13 @@ from __future__ import annotations
 import sys
 import logging
 import time
-from pathlib import Path
 from hashlib import sha256
 from datetime import datetime
 from tempfile import mkdtemp
+from pathlib import Path
 from typing import TYPE_CHECKING
 
-from yunpath import AnyPath, CloudPath
+from panpath import PanPath, CloudPath
 from rich.markup import _parse
 from xqute.utils import logger as xqute_logger
 from xqute.path import MountedPath
@@ -86,6 +86,7 @@ class PipenLog2FilePlugin:
         "_job_statuses",
         "_xqute_handler",
         "_last_update_time",
+        "_last_cloud_sync_time",
         "logfile",
         "latest_logfile",
         "xqute_logfile",
@@ -106,6 +107,7 @@ class PipenLog2FilePlugin:
             "cached": [],
         }
         self._last_update_time: float = time.time()
+        self._last_cloud_sync_time: float = 0.0
         self._xqute_handler: logging.Handler | None = None
         # The logfile for the current pipeline
         self.logfile: MountedPath | CloudPath = None
@@ -114,17 +116,37 @@ class PipenLog2FilePlugin:
         self.proc_counter: int = 0
         self.pipen: Pipen | None = None
 
-    def _sync_logfile(self, logfile: MountedPath | CloudPath):
+    async def _sync_logfile(
+        self, logfile: MountedPath | CloudPath, force: bool = False
+    ):
         """Sync the log file to cloud storage"""
         if not self.pipen or not isinstance(self.pipen.workdir, CloudPath):
             # Not in cloud storage
             return
 
-        # print(f"Synchronizing {logfile} to cloud storage {logfile.spec}")
-        logfile.spec.parent.mkdir(parents=True, exist_ok=True)  # type: ignore
-        logfile.spec.write_text(logfile.read_text())  # type: ignore
+        # Check if enough time has passed since last sync
+        if not force:
+            interval = self.pipen.config.plugin_opts.get(
+                "log2file_update_freq", 10.0
+            )
+            elapsed = time.time() - self._last_cloud_sync_time
+            if elapsed < interval:
+                return
 
-    def _emit_message(self, msg: str):
+        try:
+            old_content = await logfile.spec.a_read_text()
+        except Exception:
+            old_content = None
+
+        new_content = await logfile.a_read_text()
+        if old_content == new_content:
+            return
+
+        await logfile.spec.parent.a_mkdir(parents=True, exist_ok=True)
+        await logfile.spec.a_write_text(new_content)
+        self._last_cloud_sync_time = time.time()
+
+    async def _emit_message(self, msg: str):
         """Emit a log message"""
         if not self._handler:
             return
@@ -141,8 +163,8 @@ class PipenLog2FilePlugin:
         record.plugin_name = "log2f"
         self._handler.emit(record)
 
-        self._sync_logfile(self.logfile)
-        self._sync_logfile(self.latest_logfile)
+        await self._sync_logfile(self.logfile)
+        await self._sync_logfile(self.latest_logfile)
 
     def _update_job_statuses(self, job_index: int, status: str):
         """Update the job statuses"""
@@ -155,7 +177,7 @@ class PipenLog2FilePlugin:
                     st.remove(job_index)
             self._job_statuses[status].append(job_index)
 
-    def _log_job_statuses(self, proc: Proc, always: bool = False):
+    async def _log_job_statuses(self, proc: Proc, always: bool = False):
         """Log the job progress"""
         if not self._handler or not self.pipen:
             return
@@ -168,7 +190,7 @@ class PipenLog2FilePlugin:
         ):
             return
 
-        self._emit_message(
+        await self._emit_message(
             f"{proc.name}: Jobs Status: "
             + ", ".join(
                 f"{st}: {brief_list(self._job_statuses[st])}"
@@ -200,14 +222,14 @@ class PipenLog2FilePlugin:
         self.pipen = pipen
         if "workdir" in pipen._kwargs:
             # kwargs have higher priority than config
-            pipen.workdir = AnyPath(pipen._kwargs["workdir"]) / pipen.name
+            pipen.workdir = PanPath(pipen._kwargs["workdir"]) / pipen.name
 
         lfname = f"run-{datetime.now():%Y_%m_%d_%H_%M_%S}.log"
         if isinstance(pipen.workdir, CloudPath):
             pipen.config.plugin_opts.setdefault("log2file_update_freq", 10.0)
             dig = sha256(str(pipen.workdir).encode()).hexdigest()[:8]
             self.logfile = MountedPath(
-                Path(mkdtemp(suffix=f"-{dig}")).joinpath(".logs", lfname),
+                PanPath(mkdtemp(suffix=f"-{dig}")).joinpath(".logs", lfname),
                 spec=pipen.workdir.joinpath(".logs", lfname),
             )
             self.latest_logfile = MountedPath(
@@ -220,12 +242,17 @@ class PipenLog2FilePlugin:
             self.logfile = MountedPath(pipen.workdir.joinpath(".logs", lfname))
             self.latest_logfile = MountedPath(pipen.workdir.joinpath("run-latest.log"))
 
-        self.logfile.parent.mkdir(parents=True, exist_ok=True)
-        if self.latest_logfile.exists() or self.latest_logfile.is_symlink():
-            self.latest_logfile.unlink()
+        await self.logfile.parent.a_mkdir(parents=True, exist_ok=True)
+        if (
+            await self.latest_logfile.a_exists()
+            or await self.latest_logfile.a_is_symlink()
+        ):
+            await self.latest_logfile.a_unlink()
 
-        self.latest_logfile.symlink_to(
-            self.logfile.absolute().relative_to(self.logfile.parent.parent.absolute())
+        await self.latest_logfile.a_symlink_to(
+            Path(str(self.logfile.absolute())).relative_to(
+                str(self.logfile.parent.parent.absolute())
+            )
         )
 
         self._handler = logging.FileHandler(self.logfile)
@@ -248,54 +275,54 @@ class PipenLog2FilePlugin:
             pass
         self._handler = None
 
-        self._sync_logfile(self.logfile)
-        self._sync_logfile(self.latest_logfile)
+        await self._sync_logfile(self.logfile, force=True)
+        await self._sync_logfile(self.latest_logfile, force=True)
 
     @plugin.impl
     async def on_job_init(self, job: Job):
         self._update_job_statuses(job.index, "init")
-        self._log_job_statuses(job.proc)
+        await self._log_job_statuses(job.proc)
 
     @plugin.impl
     async def on_job_queued(self, job: Job):
         self._update_job_statuses(job.index, "queued")
-        self._log_job_statuses(job.proc)
+        await self._log_job_statuses(job.proc)
 
     @plugin.impl
     async def on_job_submitted(self, job: Job):
         self._update_job_statuses(job.index, "submitted")
-        self._log_job_statuses(job.proc)
+        await self._log_job_statuses(job.proc)
 
     @plugin.impl
     async def on_job_started(self, job: Job):
         self._update_job_statuses(job.index, "running")
-        self._log_job_statuses(job.proc)
+        await self._log_job_statuses(job.proc)
 
     @plugin.impl
     async def on_job_killed(self, job: Job):
         self._update_job_statuses(job.index, "killed")
-        self._log_job_statuses(job.proc)
+        await self._log_job_statuses(job.proc)
 
     @plugin.impl
     async def on_job_succeeded(self, job: Job):
         self._update_job_statuses(job.index, "succeeded")
-        self._log_job_statuses(job.proc)
+        await self._log_job_statuses(job.proc)
 
     @plugin.impl
     async def on_job_failed(self, job: Job):
         self._update_job_statuses(job.index, "failed")
-        self._log_job_statuses(job.proc)
+        await self._log_job_statuses(job.proc)
 
     @plugin.impl
     async def on_job_cached(self, job: Job):
         self._update_job_statuses(job.index, "cached")
-        self._log_job_statuses(job.proc)
+        await self._log_job_statuses(job.proc)
 
     @plugin.impl
     async def on_proc_start(self, proc: Proc):
         """Also save xqute logs"""
         self.proc_counter += 1
-        self._emit_message(
+        await self._emit_message(
             f"{proc.name}: Running Process: "
             f"{self.proc_counter}/{len(proc.pipeline.procs)} "
             f"({100 * self.proc_counter / len(proc.pipeline.procs):.1f}%)"
@@ -312,8 +339,11 @@ class PipenLog2FilePlugin:
         else:
             self.xqute_logfile = MountedPath(proc.workdir.joinpath("proc.xqute.log"))
 
-        if not proc.plugin_opts.log2file_xqute_append and self.xqute_logfile.exists():
-            self.xqute_logfile.unlink()
+        if (
+            not proc.plugin_opts.log2file_xqute_append
+            and await self.xqute_logfile.a_exists()
+        ):
+            await self.xqute_logfile.a_unlink()
 
         self._xqute_handler = logging.FileHandler(self.xqute_logfile, delay=True)
         self._xqute_handler.setFormatter(
@@ -344,14 +374,14 @@ class PipenLog2FilePlugin:
                 pass
             self._xqute_handler = None
 
-        self._sync_logfile(self.xqute_logfile)
+        await self._sync_logfile(self.xqute_logfile)
         self.xqute_logfile = None
 
         if not self._handler:
             return
 
-        self._sync_logfile(self.logfile)
-        self._sync_logfile(self.latest_logfile)
+        await self._sync_logfile(self.logfile, force=True)
+        await self._sync_logfile(self.latest_logfile, force=True)
 
 
 log2file_plugin = PipenLog2FilePlugin()
