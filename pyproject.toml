@@ -10,18 +10,18 @@ repository = "https://github.com/pwwang/pipen-log2file"
 
 [tool.poetry.dependencies]
 python = "^3.9"
-pipen = "^1.0"
+pipen = {version = "1.1.*", allow-prereleases = true}
 
 [tool.poetry.build]
 generate-setup-file = true
 
 [tool.poetry.group.dev.dependencies]
-pipen-args = "^1.0"
+pipen-args = "^1.1"
 pytest = "^8"
 pytest-cov = "^6"
 
 [tool.poetry.group.examples.dependencies]
-google-cloud-storage = "^3"
+panpath = {version = "^0.4", extras = ["async-gs"] }
 python-dotenv = "^1"
 
 [build-system]
