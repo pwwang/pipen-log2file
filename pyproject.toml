@@ -16,7 +16,7 @@ pipen = {version = "1.1.*", allow-prereleases = true}
 generate-setup-file = true
 
 [tool.poetry.group.dev.dependencies]
-pipen-args = "^1.1"
+pipen-args = "^1.2"
 pytest = "^8"
 pytest-cov = "^6"
 
