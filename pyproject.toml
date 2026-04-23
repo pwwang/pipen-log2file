@@ -1,34 +1,38 @@
-[tool.poetry]
+[project]
 name = "pipen-log2file"
-version = "1.1.1"
+dynamic = ["version"]
 description = "Add verbosal information in logs for pipen."
-authors = ["pwwang <pwwang@pwwang.com>"]
-license = "MIT"
+authors = [{name = "pwwang", email = "pwwang@pwwang.com"}]
+license = {text = "MIT"}
 readme = "README.md"
-homepage = "https://github.com/pwwang/pipen-log2file"
-repository = "https://github.com/pwwang/pipen-log2file"
+requires-python = ">=3.9"
+dependencies = [
+    "pipen>=1.1,<1.2; python_version>='3.9'",
+]
 
-[tool.poetry.dependencies]
-python = "^3.9"
-pipen = {version = "1.1.*", allow-prereleases = true}
+[tool.hatch.version]
+path = "pipen_log2file.py"
 
-[tool.poetry.build]
-generate-setup-file = true
+[dependency-groups]
+dev = [
+    "pipen-args>=1.2",
+    "pytest>=8",
+    "pytest-cov>=6",
+]
+examples = [
+    "panpath[async-gs]>=0.4",
+    "python-dotenv>=1",
+]
 
-[tool.poetry.group.dev.dependencies]
-pipen-args = "^1.2"
-pytest = "^8"
-pytest-cov = "^6"
-
-[tool.poetry.group.examples.dependencies]
-panpath = {version = "^0.4", extras = ["async-gs"] }
-python-dotenv = "^1"
+[project.urls]
+Homepage = "https://github.com/pwwang/pipen-log2file"
+Repository = "https://github.com/pwwang/pipen-log2file"
 
 [build-system]
-requires = ["poetry>=1.0"]
-build-backend = "poetry.masonry.api"
+requires = ["hatchling"]
+build-backend = "hatchling.build"
 
-[tool.poetry.plugins.pipen]
+[project.entry-points.pipen]
 log2file = "pipen_log2file:log2file_plugin"
 
 [tool.mypy]
