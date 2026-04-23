@@ -190,15 +190,23 @@ class PipenLog2FilePlugin:
         ):
             return
 
-        await self._emit_message(
-            f"{proc.name}: Jobs Status: "
-            + ", ".join(
-                f"{st} ({len(self._job_statuses[st])}): "
-                f"{brief_list(self._job_statuses[st])}"
-                for st in self._job_statuses
-                if self._job_statuses[st]
+        if proc.size == 1:
+            for st in self._job_statuses:
+                if self._job_statuses[st]:
+                    await self._emit_message(
+                        f"{proc.name}: Job Status: {st}"
+                    )
+        else:
+            await self._emit_message(
+                f"{proc.name}: Jobs Status: "
+                + ", ".join(
+                    f"{st} ({len(self._job_statuses[st])}): "
+                    f"{brief_list(self._job_statuses[st])}"
+                    for st in self._job_statuses
+                    if self._job_statuses[st]
+                )
             )
-        )
+
         self._last_update_time = time.time()
 
     @plugin.impl

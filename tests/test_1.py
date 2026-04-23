@@ -23,3 +23,16 @@ def test_1():
     p.wait()
     assert p.returncode == 0
     assert logfile.exists()
+
+
+def test_multijobs():
+    logfile = Path(".").joinpath(".pipen", "Pipeline3", "run-latest.log")
+    logfile.unlink(missing_ok=True)
+    cmd = [
+        sys.executable,
+        str(HERE / "pipeline2.py")
+    ]
+    p = subprocess.Popen(cmd)
+    p.wait()
+    assert p.returncode == 0
+    assert logfile.exists()
