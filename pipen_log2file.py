@@ -193,7 +193,8 @@ class PipenLog2FilePlugin:
         await self._emit_message(
             f"{proc.name}: Jobs Status: "
             + ", ".join(
-                f"{st}: {brief_list(self._job_statuses[st])}"
+                f"{st} ({len(self._job_statuses[st])}): "
+                f"{brief_list(self._job_statuses[st])}"
                 for st in self._job_statuses
                 if self._job_statuses[st]
             )
