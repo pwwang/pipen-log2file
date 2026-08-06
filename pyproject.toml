@@ -7,7 +7,7 @@ license = {text = "MIT"}
 readme = "README.md"
 requires-python = ">=3.9"
 dependencies = [
-    "pipen>=1.1,<1.2; python_version>='3.9'",
+    "pipen>=1.1,<2",
 ]
 
 [tool.hatch.version]
@@ -46,3 +46,6 @@ strict_optional = false
 line-length = 88
 target-version = ['py39', 'py310', 'py311', 'py312']
 include = '\.pyi?$'
+
+[tool.uv]
+prerelease = "allow"
