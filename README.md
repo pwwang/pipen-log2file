@@ -1,6 +1,14 @@
-# pipen-log2file
+<div align="center">
+    <img src="./logo.png" width="240px" alt="pipen-log2file logo" />
 
-Save running logs to file for [pipen][1].
+   <p style="font-weight:bold;">
+       Save running logs to file for
+       <a href="https://github.com/pwwang/pipen" target="_blank">pipen</a>.
+   </p>
+
+</div>
+
+<hr />
 
 The log file is saved to `<workdir>/<pipeline>/.logs/run-<date-time>.log` by default.
 A symlink `<workdir>/<pipeline>/run-latest.log` is created to the latest log file.
